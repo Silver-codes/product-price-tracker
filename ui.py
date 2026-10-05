@@ -40,10 +40,26 @@ def get_price_history(product_id):
         st.error("Cannot connect to backend server. Is FastAPI running?")
     return []
 
+#Delete a product
+def delete_product(product_id):
+    try:
+        response = requests.delete(f"{fastapi_url}/products/{product_id}")
+        if response.status_code == 200:
+            st.write("Product deleted succesfully")
+            return True
+        else:
+            st.error(f"Status code: {response.status_code} - {response.text}")
+            return False
+    except requests.exceptions.ConnectionError:
+            st.error("Cannot connect to backend server. Is FastAPI running?")
+    return False
 
 
-##UI section
-#Sidebar for adding products
+
+###UI section
+all_products = get_products()
+##Sidebar
+#Add product UI
 st.sidebar.header("Add new product to track")
 
 with st.sidebar.form(key="add_product_form"):
@@ -59,12 +75,34 @@ if submit_button:
     else:
         st.sidebar.warning("Please fill out all field")
 
+#Delete product
+if all_products:
+    st.sidebar.divider()
+    st.sidebar.header("Delete tracked product")
+
+    delete_options = {p["product_name"]: p["id"] for p in all_products}
+    selected_delete_name = st.sidebar.selectbox("Select product to delete",
+        list(delete_options.keys()),
+        key="delete_selector"
+    )
+
+    if st.sidebar.button("Delete Product", type="primary"):
+        product_to_remove_id = delete_options[selected_delete_name]
+        if delete_product(product_to_remove_id):
+            st.sidebar.success(f"Deleted '{selected_delete_name}'!")
+            st.rerun()
+
+
+
+
+
+
+
+##Main body
 #Main Title
 st.title("Product Price Tracker")
-
 #Main dashboard view
 st.header("Your products")
-all_products = get_products()
 if all_products:
     df = pd.DataFrame(all_products)
     st.dataframe(df, use_container_width=True)

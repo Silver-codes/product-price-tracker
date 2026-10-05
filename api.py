@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     # Initialize and start the scheduler
     scheduler = BackgroundScheduler()
     # Run job every 15 minutes
-    scheduler.add_job(auto_update_prices, "interval", minutes=1)
+    scheduler.add_job(auto_update_prices, "interval", minutes=15)
     scheduler.start()
     yield
     scheduler.shutdown()
