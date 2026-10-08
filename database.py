@@ -28,7 +28,7 @@ class PriceHistory(SQLModel, table=True):
     price: float
     # Use timezone-aware UTC datetime for SQLModel compatibility
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    product: Optional["Product"] = Relationship(back_populates="pricehistory")
+    product: Optional[Product] = Relationship(back_populates="pricehistory")
 
 engine = create_engine("sqlite:///database.db")
 

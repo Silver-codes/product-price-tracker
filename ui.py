@@ -6,6 +6,11 @@ import pandas as pd
 fastapi_url = "http://127.0.0.1:8000"
 
 ##Function section
+#Dropdown text
+def product_label(p):
+    return f"{p['product_name']} (#{p['id']})"
+
+
 #fetch all products
 def get_products():
     try:
@@ -21,7 +26,6 @@ def add_product(name, url):
     try:
         response = requests.post(f"{fastapi_url}/products", json={"product_name": name, "product_url": url})
         if response.status_code == 200:
-            st.write("Product added successfully!")
             return True
         else:
             st.error(f"Status code: {response.status_code} - {response.text}")
@@ -45,14 +49,28 @@ def delete_product(product_id):
     try:
         response = requests.delete(f"{fastapi_url}/products/{product_id}")
         if response.status_code == 200:
-            st.write("Product deleted succesfully")
             return True
         else:
             st.error(f"Status code: {response.status_code} - {response.text}")
             return False
     except requests.exceptions.ConnectionError:
-            st.error("Cannot connect to backend server. Is FastAPI running?")
+        st.error("Cannot connect to backend server. Is FastAPI running?")
     return False
+
+#Update product
+def update_product(product_id, name: str, url: str):
+    try:
+        response = requests.put(f"{fastapi_url}/products/{product_id}", json={"product_name": name , "product_url" : url})
+        if response.status_code == 200:
+            return True
+        else:
+            st.error(f"Status code: {response.status_code} - {response.text}")
+            return False
+    except requests.exceptions.ConnectionError:
+        st.error("Cannot connect to backend server. Is FastAPI running?")
+    return False
+
+
 
 
 
@@ -73,14 +91,43 @@ if submit_button:
             st.sidebar.success("Product added successfully!")
             st.rerun()
     else:
-        st.sidebar.warning("Please fill out all field")
+        st.sidebar.warning("Please fill out all fields")
+
+#Update product UI
+if all_products:
+    st.sidebar.divider()
+    st.sidebar.header("Update tracked product")
+
+    update_options = {product_label(p): p for p in all_products}
+    selected_update_name_id = st.sidebar.selectbox("Select product to update",
+            list(update_options.keys()),
+            key= "update_selector"
+    )
+    selected_product = update_options[selected_update_name_id]
+    
+    with st.sidebar.form(key="update_product_form"):
+        new_product_name = st.text_input("New product name", value=selected_product["product_name"], key=f"name_{selected_product['id']}")
+        new_product_url = st.text_input("New product URL", value=selected_product["product_url"], key=f"url_{selected_product['id']}")
+        update_button = st.form_submit_button("Update Product")
+    if update_button:
+        if new_product_name and new_product_url:
+            success_update = update_product(selected_product["id"], new_product_name, new_product_url)
+            if success_update:
+                st.sidebar.success("Product updated successfully!")
+                st.rerun()
+        else:
+            st.sidebar.warning("Please fill out all fields")
+
+
+
+
 
 #Delete product
 if all_products:
     st.sidebar.divider()
     st.sidebar.header("Delete tracked product")
 
-    delete_options = {p["product_name"]: p["id"] for p in all_products}
+    delete_options = {product_label(p): p["id"] for p in all_products}
     selected_delete_name = st.sidebar.selectbox("Select product to delete",
         list(delete_options.keys()),
         key="delete_selector"
@@ -111,7 +158,7 @@ else:
 
 #Price history lookup
 if all_products:
-    product_options = {p["product_name"]: p["id"] for p in all_products}
+    product_options = {product_label(p): p["id"] for p in all_products}
     selected_name = st.selectbox("Select a product to view price history", list(product_options.keys()))
     selected_id = product_options[selected_name]
     if selected_id:
